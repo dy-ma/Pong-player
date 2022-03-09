@@ -1,4 +1,5 @@
 from collections import deque
+from multiprocessing import reduction
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -21,7 +22,7 @@ class QLearner(nn.Module):
         self.num_actions = self.env.action_space.n
 
         self.features = nn.Sequential(
-            nn.Conv2d(self.input_shape[0], 32, kernel_size=8, stride=4),
+            nn.Conv2d(self.input_shape[0], 32, kernel_size=8, stride=4), # also explain this layer but much more complex
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=4, stride=2),
             nn.ReLU(),
@@ -30,7 +31,7 @@ class QLearner(nn.Module):
         )
         
         self.fc = nn.Sequential(
-            nn.Linear(self.feature_size(), 512),
+            nn.Linear(self.feature_size(), 512), # explain this layer bonus points
             nn.ReLU(),
             nn.Linear(512, self.num_actions)
         )
@@ -65,18 +66,25 @@ class QLearner(nn.Module):
 def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     state, action, reward, next_state, done = replay_buffer.sample(batch_size)
 
-    state = Variable(torch.FloatTensor(np.float32(state)))
+    state = Variable(torch.FloatTensor(np.float32(state)).squeeze(1))
     next_state = Variable(torch.FloatTensor(np.float32(next_state)).squeeze(1), requires_grad=True)
     action = Variable(torch.LongTensor(action))
     reward = Variable(torch.FloatTensor(reward))
     done = Variable(torch.FloatTensor(done))
     # implement the loss function here
-    q = model.forward(state)
-    qprime = target_model.forward(state)
-    qprime = [val for i, val in enumerate(qprime) if done[1] == 0] # qp values that aren't terminal
-    yi = reward + gamma * qprime
-    loss = (yi - qprime) ** 2
-    
+    q = model(state)[0][action]
+    # qprime = max(target_model(state), axis=1)
+    # qprime = [val for i, val in enumerate(qprime) if done[1] == 0] # qp values that aren't terminal
+    # qprime *= (1 - done) 
+    # target on gpu
+    qprime = torch.max(target_model(next_state)) * (1-done)
+    target_model(next_state).detach() # GPU tensor -> CPU tensor so Gamma multiply works
+    yi = reward + gamma * qprime # float multiply to cpu
+    qprime = Variable(torch.FloatTensor(qprime)) # CPU tensor -> GPU for the MSE gradient
+    # loss = torch.mean((yi - q) ** 2)
+    loss = nn.MSELoss(reduction='mean')(yi,q)
+    # print(type(yi), type(q))
+    # print(yi.size(), q.size())
     return loss
 
 
@@ -92,9 +100,8 @@ class ReplayBuffer(object):
 
     def sample(self, batch_size):
         # TODO: Randomly sampling data with specific batch size from the buffer
-        tuples = random.sample(self.buffer, batch_size)
-        state, action, reward, next_state, done = tuples[0]
-
+        minibatch = random.sample(self.buffer, batch_size)
+        state, action, reward, next_state, done = zip(*minibatch)
         return state, action, reward, next_state, done
 
     def __len__(self):
