@@ -77,7 +77,7 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     qprime = torch.max(target_model(next_state)) * (1-done)
     qprime.detach() # GPU tensor -> CPU tensor so Gamma multiply works
     yi = reward + gamma * qprime # float multiply to cpu
-    qprime = Variable(torch.FloatTensor(qprime)) # CPU tensor -> GPU for the MSE gradient
+    qprime.cuda() # CPU tensor -> GPU for the MSE gradient
     # loss = torch.mean((yi - q) ** 2)
     loss = nn.MSELoss(reduction='mean')(yi,q)
     # print(type(yi), type(q))
