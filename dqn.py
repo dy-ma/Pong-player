@@ -63,22 +63,23 @@ class QLearner(nn.Module):
 def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     state, action, reward, next_state, done = replay_buffer.sample(batch_size)
 
-    state = Variable(torch.FloatTensor(state))
-    next_state = Variable(torch.FloatTensor(next_state), requires_grad=True)
+    state = Variable(torch.FloatTensor(np.float32(state)).squeeze(1))
+    next_state = Variable(torch.FloatTensor(np.float32(next_state)).squeeze(1), requires_grad=True)
     action = Variable(torch.LongTensor(action))
     reward = Variable(torch.FloatTensor(reward))
     done = Variable(torch.FloatTensor(done))
     # implement the loss function here
-    q = model(state)[0][action] # model(state) returns (32,6) so we index 0 so dim matches qprime
-    qprime = torch.max(target_model(next_state)) * (1-done)
-    qprime.detach() # GPU tensor -> CPU tensor so Gamma multiply works
-    yi = reward + gamma * qprime # float multiply to cpu
-    qprime.cuda() # CPU tensor -> GPU for the MSE gradient
-    # loss = torch.mean((yi - q) ** 2)
-    loss = nn.MSELoss(yi,q)
-    # print(type(yi), type(q))
-    # print(yi.size(), q.size())
-    return loss
+    Q = model(state) # model(state) returns action space for each minibatch
+    Qp = target_model(next_state)
+    # index Q values by action tensor
+    Q = torch.gather(Q, 1, action.unsqueeze(1)) # row wise gather, adds 1 dim to action to match src
+    # get row-wise max values and check for terminal state
+    Qp = Qp.max(1)[0] * (1-done)  
+    Qp.detach() # GPU tensor -> CPU tensor so Gamma multiply works
+    y = reward + gamma * Qp # float multiply to cpu
+    Qp.cuda() # CPU tensor -> GPU for the MSE gradient
+    loss = nn.MSELoss()
+    return loss(Q.squeeze(1),y)
 
 
 class ReplayBuffer(object):
