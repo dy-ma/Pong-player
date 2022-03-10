@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.autograd as autograd 
 import torch.nn.functional as F
+import pdb # debug
 USE_CUDA = torch.cuda.is_available()
 from dqn import QLearner, compute_td_loss, ReplayBuffer
 
@@ -48,7 +49,8 @@ episode_reward = 0
 state = env.reset()
 
 for frame_idx in range(1, num_frames + 1):
-    # print("Frame: " + str(frame_idx))
+    if frame_idx % 1000 == 0:
+        print("Frame: " + str(frame_idx))
 
     epsilon = epsilon_by_frame(frame_idx)
     action = model.act(state, epsilon)
@@ -79,6 +81,7 @@ for frame_idx in range(1, num_frames + 1):
         print('Last-10 average reward: %f' % np.mean(all_rewards[-10:], 0)[1])
 
     if frame_idx % 50000 == 0:
+        print("#Frame: %d", frame_idx)
         target_model.copy_from(model)
         torch.save(model.state_dict(), "training.pth")
         # Save losses and reward changes
