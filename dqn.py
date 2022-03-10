@@ -52,10 +52,7 @@ class QLearner(nn.Module):
             # TODO: Given state, you should write code to get the Q value and chosen action
             actions = self(state)
             # action = addction.detach().cpu().numpy() # convert from tensor to numpy 
-            return torch.argmax(actions)
-
-
-
+            return torch.argmax(actions).item()
         else:
             action = random.randrange(self.env.action_space.n)
         return action
@@ -67,8 +64,8 @@ class QLearner(nn.Module):
 def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     state, action, reward, next_state, done = replay_buffer.sample(batch_size)
 
-    state = Variable(torch.FloatTensor(np.float32(state)).squeeze(1))
-    next_state = Variable(torch.FloatTensor(np.float32(next_state)).squeeze(1), requires_grad=True)
+    state = Variable(torch.FloatTensor(state))
+    next_state = Variable(torch.FloatTensor(next_state), requires_grad=True)
     action = Variable(torch.LongTensor(action))
     reward = Variable(torch.FloatTensor(reward))
     done = Variable(torch.FloatTensor(done))
@@ -79,7 +76,7 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     yi = reward + gamma * qprime # float multiply to cpu
     qprime.cuda() # CPU tensor -> GPU for the MSE gradient
     # loss = torch.mean((yi - q) ** 2)
-    loss = nn.MSELoss(reduction='mean')(yi,q)
+    loss = nn.MSELoss(yi,q)
     # print(type(yi), type(q))
     # print(yi.size(), q.size())
     return loss
@@ -98,7 +95,7 @@ class ReplayBuffer(object):
     def sample(self, batch_size):
         # TODO: Randomly sampling data with specific batch size from the buffer
         minibatch = random.sample(self.buffer, batch_size)
-        state, action, reward, next_state, done = zip(*minibatch)
+        state, action, reward, next_state, done = list(map(list, zip(*minibatch)))
         return state, action, reward, next_state, done
 
     def __len__(self):

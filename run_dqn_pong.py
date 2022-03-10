@@ -13,8 +13,6 @@ import pdb # debug
 USE_CUDA = torch.cuda.is_available()
 from dqn import QLearner, compute_td_loss, ReplayBuffer
 
-print("Prog start")
-
 env_id = "PongNoFrameskip-v4"
 env = make_atari(env_id)
 env = wrap_deepmind(env)
