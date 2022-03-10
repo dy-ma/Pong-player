@@ -48,6 +48,8 @@ episode_reward = 0
 
 state = env.reset()
 
+# pdb.set_trace()
+
 for frame_idx in range(1, num_frames + 1):
     if frame_idx % 1000 == 0:
         print("Frame: " + str(frame_idx))
