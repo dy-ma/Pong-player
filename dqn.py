@@ -51,8 +51,7 @@ class QLearner(nn.Module):
             state = Variable(torch.FloatTensor(np.float32(state)).unsqueeze(0), requires_grad=True)
             # TODO: Given state, you should write code to get the Q value and chosen action
             actions = self(state)
-            # action = addction.detach().cpu().numpy() # convert from tensor to numpy 
-            return torch.argmax(actions).item()
+            action = torch.argmax(actions).item() # item casts 1d tensor to int
         else:
             action = random.randrange(self.env.action_space.n)
         return action
@@ -95,7 +94,11 @@ class ReplayBuffer(object):
     def sample(self, batch_size):
         # TODO: Randomly sampling data with specific batch size from the buffer
         minibatch = random.sample(self.buffer, batch_size)
+<<<<<<< HEAD
         state, action, reward, next_state, done = list(map(list, zip(*minibatch)))
+=======
+        state, action, reward, next_state, done = list(map(list,zip(*minibatch)))
+>>>>>>> 4cd06f2391c9e619f4ab3ebd808734d08be85094
         return state, action, reward, next_state, done
 
     def __len__(self):
