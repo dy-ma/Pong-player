@@ -13,6 +13,8 @@ import pdb # debug
 USE_CUDA = torch.cuda.is_available()
 from dqn import QLearner, compute_td_loss, ReplayBuffer
 
+print("Prog start")
+
 env_id = "PongNoFrameskip-v4"
 env = make_atari(env_id)
 env = wrap_deepmind(env)
@@ -51,8 +53,8 @@ state = env.reset()
 # pdb.set_trace()
 
 for frame_idx in range(1, num_frames + 1):
-    if frame_idx % 1000 == 0:
-        print("Frame: " + str(frame_idx))
+#    if frame_idx % 1000 == 0:
+#        print("Frame: " + str(frame_idx))
 
     epsilon = epsilon_by_frame(frame_idx)
     action = model.act(state, epsilon)
