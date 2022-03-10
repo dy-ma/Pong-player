@@ -1,13 +1,14 @@
 from collections import deque
 from multiprocessing import reduction
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot
 import torch
 import torch.nn as nn
 import torch.autograd as autograd
 import math, random
 USE_CUDA = torch.cuda.is_available()
 Variable = lambda *args, **kwargs: autograd.Variable(*args, **kwargs).cuda() if USE_CUDA else autograd.Variable(*args, **kwargs)
+matplotlib.use('Agg')
 
 class QLearner(nn.Module):
     def __init__(self, env, num_frames, batch_size, gamma, replay_buffer):
@@ -72,13 +73,9 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     reward = Variable(torch.FloatTensor(reward))
     done = Variable(torch.FloatTensor(done))
     # implement the loss function here
-    q = model(state)[0][action]
-    # qprime = max(target_model(state), axis=1)
-    # qprime = [val for i, val in enumerate(qprime) if done[1] == 0] # qp values that aren't terminal
-    # qprime *= (1 - done) 
-    # target on gpu
+    q = model(state)[0][action] # model(state) returns (32,6) so we index 0 so dim matches qprime
     qprime = torch.max(target_model(next_state)) * (1-done)
-    target_model(next_state).detach() # GPU tensor -> CPU tensor so Gamma multiply works
+    qprime.detach() # GPU tensor -> CPU tensor so Gamma multiply works
     yi = reward + gamma * qprime # float multiply to cpu
     qprime = Variable(torch.FloatTensor(qprime)) # CPU tensor -> GPU for the MSE gradient
     # loss = torch.mean((yi - q) ** 2)
