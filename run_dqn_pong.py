@@ -92,6 +92,6 @@ for frame_idx in range(1, num_frames + 1):
 
 # Save losses and reward changes
 np.savetxt("losses.csv", losses, delimiter=",")
-np.savetxt("all_rewards.csv", losses, delimiter=",")
+np.savetxt("all_rewards.csv", all_rewards, delimiter=",")
 
 
