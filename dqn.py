@@ -75,7 +75,9 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     Q = torch.gather(Q, 1, action.unsqueeze(1)) # row wise gather, adds 1 dim to action to match src
     # get row-wise max values and check for terminal state
     Qp = Qp.max(1)[0] * (1-done)  
-    y = torch.add(torch.mul(Qp, gamma), reward)
+    Qp.detach()
+    y = reward + gamma * Qp
+    # y = torch.add(torch.mul(Qp, gamma), reward)
     loss = nn.MSELoss()
     return loss(Q.squeeze(1),y)
 
